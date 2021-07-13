@@ -1,4 +1,3 @@
-mona
 
 var xValue = d =>d.poverty;
 var yValue = d =>d.healthcare;
