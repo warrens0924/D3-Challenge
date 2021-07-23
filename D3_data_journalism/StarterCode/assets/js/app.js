@@ -1,12 +1,11 @@
-
-var xValue = d =>d.poverty;
-var yValue = d =>d.healthcare;
-var xlabel = "in poverty(%)";
-var ylabel = "healthcare(%)";
+var xValue = d => d.poverty;
+var yValue = d => d.healthcare;
+var xLabel = "In Poverty(%)";
+var yLabel = "Lacks Healthcare(%)";
 var svgWidth = 960;
 var svgHeight = 600;
 
-// margin variable
+//margin variable
 var margin = {
     top: 20,
     right: 40,
@@ -14,99 +13,104 @@ var margin = {
     left: 50
 };
 
-// width and height variable 
+// create width and height variable 
 var width = svgWidth - margin.left - margin.right;
 var height = svgHeight - margin.top - margin.bottom;
 
-// SVG 
-//var svg = d3
-//.select("#scatter")
-//.append("svg")
-//.attr("width", svgWidth)
-//.attr("height", svgHeight);
+//SVG
+var svg = d3
+    .select("#scatter")
+    .append("svg")
+    .attr("width", svgWidth)
+    .attr("height", svgHeight);
 
 // Append an SVG group and move it with transform
-//var chartGroup = svg.append("g")
-//.attr("transform", `translate(${margin.left}, ${margin.top})`);
-const svg = d3.select("#scatter")
-    .append("svg")
-    .attr("width", width + margin.left + margin.right)
-    .attr("height", height + margin.top + margin.bottom)
-    .append("g")
-    .attr("transform", `translate(${margin.left}, ${margin.top})`)
-    .attr('class', 'chart');
+var chartGroup = svg.append("g")
+    .attr("transform", `translate(${margin.left}, ${margin.top})`);
 
 // import data from csv
-d3.csv("assets/data/data.csv").then(function (data) {
-    console.log(data);
+d3.csv("assets/data/data.csv").then(function (healthData) {
+    console.log(healthData);
 
-    data.forEach(function (data) {
+    healthData.forEach(function (data) {
         console.log(data);
-
+        // grab the necessary variables for the plot,
+        //make sure poverty and healthcare variables are integers
         data.poverty = + data.poverty;
         data.healthcare = + data.healthcare
     });
-    // x and y scales for the plot
-    var x = d3.scaleLinear()
-        .domain(d3.extent(data, xValue)).nice()
+
+    // create x and y scales for the plot
+    var xScale = d3.scaleLinear()
+        .domain([d3.min(healthData, d => d.poverty) * 0.9, d3.max(healthData, d => d.poverty) * 1.1])
         .range([0, width]);
 
-        var y = d3.scaleLinear()
-        .domain(d3.extent(data, yValue)).nice()
+    var yScale = d3.scaleLinear()
+        .domain([d3.min(healthData, d => d.healthcare) * 0.8, d3.max(healthData, d => d.healthcare) * 1.1])
         .range([height, 0]);
-    // x and y axis
-    //var xAxis = d3.axisBottom(xScale);
-    // var yAxis = d3.axisLeft(yScale);
+
+    // create x and y axis
+    var xAxis = d3.axisBottom(xScale);
+    var yAxis = d3.axisLeft(yScale);
 
     // append axes to the chart
-    // chartGroup.append("g")
-    //.attr("transform", `translate(0, ${height})`)
-    // .call(xAxis);
+    chartGroup.append("g")
+        .attr("transform", `translate(0, ${height})`)
+        .call(xAxis);
 
-    // chartGroup.append("g")
-    // .call(yAxis);
-
-    var xAxisG = svg.append("g")
-        .attr("transform", "translate(0," + height + ")")
-        .call(d3.axisBottom(x))
-        .append('text')
-        .attr('class', 'axis-label')
-        .attr('x', width / 2)
-        .attr('y', 65)
-        .text(xLabel);
-
-    var yAxisG = svg.append("g")
-        .call(d3.axisLeft(y))
-        .append('text')
-        .attr('class', 'axis-label')
-        .attr('x', -height / 2)
-        .attr('y', -60)
-        .attr('transform', `rotate(-90)`)
-        .style('text-anchor', 'middle')
-        .text(yLabel);
+    chartGroup.append("g")
+        .call(yAxis);
 
     // create circles
-    var circlesGroup = svg.selectAll("circle")
-        .data(data)
+    var circlesGroup = chartGroup.selectAll("circle")
+        .data(healthData)
         .enter()
         .append("circle")
-        .attr("cx", d => {return x(d.poverty);})
-        .attr("cy", d => {return y(d.healthcare);})
-        .attr("r", 8)
-        .attr("fill", "blue")
-        .attr('class', 'stateCircle');
+        .classed("circle", true)
+        .attr("cx", d => xScale(d.poverty))
+        .attr("cy", d => yScale(d.healthcare))
+        .attr("r", 16)
+        .attr("fill", "lightblue")
 
-    //circle labels
-    svg.selectAll(".text")
-        .data(data)
+    // add the text to the circles
+    var textSelection = chartGroup.selectAll('.text')
+    console.log(textSelection)
+
+    textSelection.data(healthData)
         .enter()
         .append("text")
-        .attr("dy", "0.35em")
-        .attr("x", d => { return x(d.poverty); })
-        .attr("y", d => { return y(d.healthcare); })
-        .text(d => { return d.abbr; })
-        .attr('class', 'stateText')
-        .attr("font-size", "10px");
+        .classed('text', true)
+        .attr("x", d => xScale(d.poverty))
+        .attr("y", d => yScale(d.healthcare))
+        .attr("transform", `translate(-10, 6)`)
+        .text(d => {
+            return d.abbr
+        })
+        .style("fill", "white")
+
+
+    // create a label group for x and y abels 
+    var labelsGroup = chartGroup.append("g")
+        .attr("transform", `translate(${width / 2}, ${height + 20})`);
+
+    // create x label variable
+    var xLabel = labelsGroup.append("text")
+        .attr("x", 0)
+        .attr("y", 20)
+        .text("In Poverty (%) ")
+        .style("font-weight", "bold")
+
+
+    // create y label variable
+    chartGroup.append("text")
+        .attr("transform", "rotate(-90)")
+        .attr("x", 0 - (height / 2))
+        .attr("y", 0 - margin.left)
+        .attr("dy", "1em")
+        .text("Lacks Healthcare (%)")
+        .style("font-weight", "bold")
+
+
     // Initialize tooltip
     var toolTip = d3.tip()
         .attr("class", "d3-tip")
@@ -119,10 +123,12 @@ d3.csv("assets/data/data.csv").then(function (data) {
     circlesGroup.on("mouseover", function (data) {
         toolTip.show(data, this);
     })
-        // onmouseout event
+        // mouseout event
         .on("mouseout", function (data, index) {
             toolTip.hide(data);
         });
+
 });
+
 
 
